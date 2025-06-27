@@ -14,14 +14,14 @@ document.addEventListener("DOMContentLoaded", function() {
         nameItems[0].classList.add('active');
       }
 
-      // Improved auto-scroll function with proper sequencing
+      // Auto-scroll function
       function autoScroll() {
         if (!isHovered && isAutoScrolling && !isTransitioning) {
           isTransitioning = true;
           
           // Remove active class from current items
-          nameItems.forEach(i => i.classList.remove('active'));
-          cards.forEach(c => c.classList.remove('active'));
+          nameItems.forEach(item => item.classList.remove('active'));
+          cards.forEach(card => card.classList.remove('active'));
           
           // Move to next item with proper wrapping
           currentIndex = (currentIndex + 1) % nameItems.length;
@@ -29,30 +29,30 @@ document.addEventListener("DOMContentLoaded", function() {
           // Add active class to new items
           nameItems[currentIndex].classList.add('active');
           cards[currentIndex].classList.add('active');
+          
           // Ensure the active name is visible in the list
           nameItems[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           
           // Reset transition flag after animation completes
           setTimeout(() => {
             isTransitioning = false;
-          }, 600); // Match the CSS transition duration
+          }, 600);
         }
       }
 
-      // Start auto-scroll with consistent timing
+      // Start auto-scroll
       function startAutoScroll() {
-        if (window.innerWidth > 900) { // Only on desktop
-          // Clear any existing interval first
+        if (window.innerWidth > 900) {
           if (autoScrollInterval) {
             clearInterval(autoScrollInterval);
           }
           
-          autoScrollInterval = setInterval(() => {
-            autoScroll();
-          }, 3000); // Fixed 4-second interval
+          autoScrollInterval = setInterval(autoScroll, 3000);
           
-          scrollIndicator.style.opacity = '0.7';
-          scrollIndicator.textContent = 'Auto-scrolling...';
+          if (scrollIndicator) {
+            scrollIndicator.style.opacity = '0.7';
+            scrollIndicator.textContent = 'Auto-scrolling...';
+          }
         }
       }
 
@@ -62,79 +62,83 @@ document.addEventListener("DOMContentLoaded", function() {
           clearInterval(autoScrollInterval);
           autoScrollInterval = null;
         }
-        scrollIndicator.style.opacity = '0.3';
-        scrollIndicator.textContent = 'Paused';
+        
+        if (scrollIndicator) {
+          scrollIndicator.style.opacity = '0.3';
+          scrollIndicator.textContent = 'Paused';
+        }
+      }
+
+      // Switch to specific card
+      function switchToCard(index) {
+        if (!isTransitioning) {
+          isTransitioning = true;
+          
+          // Remove active class from all items and cards
+          nameItems.forEach(item => item.classList.remove('active'));
+          cards.forEach(card => card.classList.remove('active'));
+          
+          // Add active class to the target item and corresponding card
+          nameItems[index].classList.add('active');
+          cards[index].classList.add('active');
+          currentIndex = index;
+          
+          // Reset transition flag
+          setTimeout(() => {
+            isTransitioning = false;
+          }, 600);
+        }
+      }
+
+      // Resume auto-scroll with delay
+      function resumeAutoScroll() {
+        setTimeout(() => {
+          if (!isHovered && isAutoScrolling && window.innerWidth > 900) {
+            startAutoScroll();
+          }
+        }, 1500);
       }
 
       // Initialize auto-scroll
       startAutoScroll();
 
-      // Manual navigation with improved hover handling
+      // Manual navigation
       nameItems.forEach((item, index) => {
-        // Mouse enter event
+        // Mouse enter event for desktop
         item.addEventListener('mouseenter', function() {
           if (window.innerWidth > 900) {
             isHovered = true;
             stopAutoScroll();
-            
-            // Only change if not already transitioning
-            if (!isTransitioning) {
-              isTransitioning = true;
-              
-              // Remove active class from all items and cards
-              nameItems.forEach(i => i.classList.remove('active'));
-              cards.forEach(c => c.classList.remove('active'));
-              
-              // Add active class to the current item and corresponding card
-              this.classList.add('active');
-              const targetId = this.getAttribute('data-target');
-              const targetCard = document.getElementById(targetId);
-              if (targetCard) {
-                targetCard.classList.add('active');
-                currentIndex = index; // Update current index
-              }
-              
-              // Reset transition flag
-              setTimeout(() => {
-                isTransitioning = false;
-              }, 600);
-            }
+            switchToCard(index);
+          }
+        });
+
+        // Mouse leave event for desktop
+        item.addEventListener('mouseleave', function() {
+          if (window.innerWidth > 900) {
+            isHovered = false;
+            resumeAutoScroll();
           }
         });
 
         // Click event for mobile
         item.addEventListener('click', function() {
           if (window.innerWidth <= 900) {
-            nameItems.forEach(i => i.classList.remove('active'));
-            cards.forEach(c => c.classList.remove('active'));
-            
-            this.classList.add('active');
-            const targetId = this.getAttribute('data-target');
-            const targetCard = document.getElementById(targetId);
-            if (targetCard) {
-              targetCard.classList.add('active');
-              currentIndex = index;
-            }
+            switchToCard(index);
           }
         });
       });
 
-      // Resume auto-scroll when mouse leaves the entire section
+      // Resume auto-scroll when mouse leaves the section
       document.querySelector('.courses-section').addEventListener('mouseleave', function() {
         if (window.innerWidth > 900) {
           isHovered = false;
-          // Resume auto-scroll after a brief delay
-          setTimeout(() => {
-            if (!isHovered && isAutoScrolling) {
-              startAutoScroll();
-            }
-          }, 1500);
+          resumeAutoScroll();
         }
       });
 
-      // Improved window resize handling
+      // Window resize handling
       window.addEventListener('resize', function() {
-        // Stop any existing auto-scroll
         stopAutoScroll();
         
         if (window.innerWidth <= 900) {
@@ -143,22 +147,17 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
           isAutoScrolling = true;
           if (!isHovered) {
-            setTimeout(() => {
-              startAutoScroll();
-            }, 500);
+            setTimeout(startAutoScroll, 500);
           }
         }
       });
 
-      // Enhanced visibility change handling
+      // Visibility change handling
       document.addEventListener('visibilitychange', function() {
         if (document.hidden) {
           stopAutoScroll();
         } else if (!isHovered && window.innerWidth > 900 && isAutoScrolling) {
-          // Resume auto-scroll when tab becomes visible again
-          setTimeout(() => {
-            startAutoScroll();
-          }, 1000);
+          setTimeout(startAutoScroll, 1000);
         }
       });
 
@@ -168,12 +167,10 @@ document.addEventListener("DOMContentLoaded", function() {
         if (window.innerWidth > 900) {
           stopAutoScroll();
           
-          // Clear existing timeout
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
           }
           
-          // Resume auto-scroll after scrolling stops
           scrollTimeout = setTimeout(() => {
             if (!isHovered && isAutoScrolling) {
               startAutoScroll();
